@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NotesWallah - Study Notes Sharing</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="script.js"></script>
+</head>
+<body>
+  <div id="themeToggle" class="theme-toggle"></div>
+    <header>
+        <h1>NotesWallah</h1>
+        <p>Your Source for Clear and Concise Study Notes</p>
+    </header>
+
+    <section class="submit-notes">
+        <h2>Submit Your Notes</h2>
+        <form id="notesForm">
+    <select id="subject" required>
+      <option value="" disabled selected>Select Subject</option>
+      <option value="Mathematics">Mathematics</option>
+      <option value="Physics">Physics</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Biology">Biology</option>
+      <option value="English">English</option>
+      <option value="History">History</option>
+      <option value="Geography">Geography</option>
+      <option value="Social  Science">Social Science</option>
+      <option value="Computer Science">Computer Science</option>
+    </select>
+            <input type="text" id="topic" placeholder="Topic (e.g. Algebra)" required />
+            <textarea id="notesContent" placeholder="Paste your notes here..." required></textarea>
+            <button type="submit">Submit Notes</button>
+        </form>
+    </section>
+
+    <section class="notes-display">
+    <h2>Available Notes</h2>
+    <div class="notes-filters">
+    <input type="text" id="searchInput" placeholder="Search by keyword or topic...">
+    <select id="subjectFilter">
+        <option value="">All Subjects</option>
+        <option value="Math">Math</option>
+        <option value="Physics">Physics</option>
+        <option value="Chemistry">Chemistry</option>
+        <option value="Biology">Biology</option>
+        <option value="English">English</option>
+        <option value="History">History</option>
+        <option value="Geography">Geography</option>
+        <option value="Social  Science">Social Science</option>
+        <option value="Computer Science">Computer Science</option>
+    </select>
+    </div>
+
+    <div id="notesList"></div>  <!-- This should stay always! -->
+</section>
+
+    <footer>
+        <p>© 2025 NotesWallah. All rights reserved. ***You are viewing the Beta Version Of the website***</p>
+    </footer>
+</body>
+</html>

@@ -1,7 +1,8 @@
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: #f7f9fc;
+    background: linear-gradient(135deg, #b0c4de 0%, #fff0f5 100%);
     color: #222;
     min-height: 100vh;
     display: flex;
@@ -387,4 +388,34 @@ header h1 {
 }
 .header-buttons button:hover {
     background: #f0f0f0;
+}
+
+@media (max-width: 600px) {
+  .submit-notes, .notes-display {
+    width: 95%; /* fit screen with some padding */
+    padding: 1rem;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    padding: 0.5rem;
+  }
+
+  .notes-filters {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  button {
+    width: 100%; /* buttons full width for easier tapping */
+  }
+
+  /* Stack the main container columns vertically */
+  main.container {
+    display: block;
+  }
+
+  aside {
+    margin-top: 1rem;
+  }
 }

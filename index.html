@@ -1,63 +1,432 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NotesWallah - Study Notes Sharing</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script defer src="script.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NotesWallah — Upgraded</title>
+  <style>
+    /* ---------- Layout ---------- */
+    :root{--accent:#004080;--card:#fff;--bg:#f7f9fc;--muted:#666}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#111;min-height:100vh;display:flex;flex-direction:column}
+    header{background:var(--accent);color:#fff;padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem}
+    header h1{margin:0;font-size:1.4rem}
+    .container{width:95%;max-width:1200px;margin:1rem auto;display:grid;grid-template-columns:1fr 360px;gap:1rem}
+    .fullwidth{grid-column:1/-1}
+    .card{background:var(--card);padding:1rem;border-radius:10px;box-shadow:0 6px 18px rgba(10,10,10,0.06)}
+
+    /* ---------- Forms & controls ---------- */
+    form{display:flex;flex-direction:column;gap:0.6rem}
+    input[type=text],select,textarea,input[type=file],button{font-size:1rem;padding:0.6rem;border-radius:6px;border:1px solid #cfcfcf}
+    textarea{min-height:120px;resize:vertical}
+    .row{display:flex;gap:0.6rem}
+    .row .flex{flex:1}
+
+    /* ---------- Notes list ---------- */
+    #notesList{display:flex;flex-direction:column;gap:0.75rem}
+    .note-card{padding:0.9rem;border-radius:8px;border-left:4px solid var(--accent);position:relative;background:#fafafa}
+    .note-meta{font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem}
+    .note-actions{display:flex;gap:0.5rem;align-items:center;margin-top:0.75rem}
+    .btn{background:var(--accent);color:#fff;border:none;padding:0.45rem 0.7rem;border-radius:6px;cursor:pointer}
+    .muted-btn{background:#eee;color:#333}
+    .icon-btn{background:#fff;border:1px solid #ddd;padding:0.35rem;border-radius:6px;cursor:pointer}
+
+    /* download placed right */
+    .download-btn{position:absolute;top:0.9rem;right:0.9rem}
+
+    /* filters */
+    .filters{display:flex;gap:0.5rem;align-items:center}
+
+    /* right column */
+    aside .section{margin-bottom:1rem}
+
+    /* theme toggle */
+    #themeToggle{position:fixed;top:1rem;right:1rem;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-size:1.25rem;cursor:pointer;border:none;box-shadow:0 6px 18px rgba(0,0,0,0.12);z-index:1200}
+    #themeToggle:hover{transform:scale(1.05)}
+
+    /* Quick revision view */
+    #revisionList{display:flex;flex-direction:column;gap:0.4rem}
+    .rev-row{padding:0.6rem;border-radius:6px;border:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+
+    /* Flashcard viewer */
+    .flashcard{width:100%;height:220px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fafafa;border:1px solid #eee;font-size:1.1rem;padding:1rem;cursor:pointer}
+    .flash-controls{display:flex;gap:0.5rem;margin-top:0.5rem}
+
+    /* PDF preview */
+    .pdf-preview{width:100%;height:220px;border:1px solid #ddd;border-radius:8px;overflow:hidden}
+
+    /* print styles */
+    @media print{
+      body *{visibility:hidden}
+      #printArea, #printArea *{visibility:visible}
+      #printArea{position:absolute;left:0;top:0;width:100%}
+    }
+
+    /* Dark mode */
+    body.dark{background:#0f1113;color:#e6eef8}
+    body.dark .card{background:#131518;color:#dfe9fb}
+    body.dark header{background:#072a49}
+    body.dark .note-card{background:#1b1e23;border-left-color:#64b5f6}
+    body.dark #themeToggle{background:#1565c0;color:#fff}
+
+    /* responsive */
+    @media (max-width:980px){.container{grid-template-columns:1fr}.download-btn{position:static}
+    }
+  </style>
 </head>
 <body>
-  <div id="themeToggle" class="theme-toggle"></div>
-    <header>
-        <h1>NotesWallah</h1>
-        <p>Your Source for Clear and Concise Study Notes</p>
-    </header>
+  <header>
+  <h1>NotesWallah</h1>
+  <div class="header-buttons">
+    <button id="quickRevisionBtn">Quick Revision</button>
+    <button id="flashcardBtn">Flashcards</button>
+  </div>
+</header>
 
-    <section class="submit-notes">
-        <h2>Submit Your Notes</h2>
-        <form id="notesForm">
-    <select id="subject" required>
-      <option value="" disabled selected>Select Subject</option>
-      <option value="Mathematics">Mathematics</option>
-      <option value="Physics">Physics</option>
-      <option value="Chemistry">Chemistry</option>
-      <option value="Biology">Biology</option>
-      <option value="English">English</option>
-      <option value="History">History</option>
-      <option value="Geography">Geography</option>
-      <option value="Social  Science">Social Science</option>
-      <option value="Computer Science">Computer Science</option>
-    </select>
-            <input type="text" id="topic" placeholder="Topic (e.g. Algebra)" required />
-            <textarea id="notesContent" placeholder="Paste your notes here..." required></textarea>
-            <button type="submit">Submit Notes</button>
-        </form>
+
+  <div id="themeToggle">🌞</div>
+
+  <main class="container">
+    <!-- LEFT: Main content -->
+    <section class="card">
+      <h2>Submit / Upload Note</h2>
+      <form id="notesForm">
+        <div class="row">
+          <select id="subject" class="flex" required>
+            <option value="" disabled selected>Select Subject</option>
+            <option>Math</option>
+            <option>Physics</option>
+            <option>Chemistry</option>
+            <option>Biology</option>
+            <option>English</option>
+            <option>History</option>
+            <option>Geography</option>
+            <option>Social Science</option>
+            <option>Computer Science</option>
+          </select>
+          <input id="topic" class="flex" type="text" placeholder="Topic (e.g. Algebra)" required />
+        </div>
+        <textarea id="notesContent" placeholder="Paste your notes here (or leave empty if uploading PDF)"></textarea>
+        <input id="pdfUpload" type="file" accept="application/pdf" />
+
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.4rem">
+          <button class="btn" type="submit">Save Note</button>
+          <button id="saveAsFlashcard" type="button" class="muted-btn">Save as Flashcard (Q/A)</button>
+          <button id="downloadAll" type="button" class="muted-btn">Download All</button>
+          <button id="printNotes" type="button" class="muted-btn">Print</button>
+        </div>
+
+      </form>
+
+      <hr style="margin:0.8rem 0">
+
+      <div class="row" style="margin-bottom:0.6rem">
+        <input id="searchInput" type="text" class="flex" placeholder="Search by topic or content..." />
+        <select id="subjectFilter">
+          <option value="">All Subjects</option>
+          <option>Math</option>
+          <option>Physics</option>
+          <option>Chemistry</option>
+          <option>Biology</option>
+          <option>English</option>
+          <option>History</option>
+          <option>Geography</option>
+          <option>Social Science</option>
+          <option>Computer Science</option>
+        </select>
+        <select id="sortBy">
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="top">Top Rated</option>
+          <option value="topic_az">Topic A→Z</option>
+        </select>
+      </div>
+
+      <div id="notesList"></div>
+
     </section>
 
-    <section class="notes-display">
-    <h2>Available Notes</h2>
-    <div class="notes-filters">
-    <input type="text" id="searchInput" placeholder="Search by keyword or topic...">
-    <select id="subjectFilter">
-        <option value="">All Subjects</option>
-        <option value="Math">Math</option>
-        <option value="Physics">Physics</option>
-        <option value="Chemistry">Chemistry</option>
-        <option value="Biology">Biology</option>
-        <option value="English">English</option>
-        <option value="History">History</option>
-        <option value="Geography">Geography</option>
-        <option value="Social  Science">Social Science</option>
-        <option value="Computer Science">Computer Science</option>
-    </select>
-    </div>
+    <!-- RIGHT: Sidebar -->
+    <aside>
+      <div class="card section">
+        <h3>Favorites</h3>
+        <div id="favoritesList">No favorites yet.</div>
+      </div>
 
-    <div id="notesList"></div>  <!-- This should stay always! -->
-</section>
+      <div class="card section">
+        <h3>PDF Preview</h3>
+        <div id="pdfPreview" class="pdf-preview">No PDF selected</div>
+      </div>
 
-    <footer>
-        <p>© 2025 NotesWallah. All rights reserved. ***You are viewing the Beta Version Of the website***</p>
-    </footer>
+      <div class="card section">
+        <h3>Create Flashcard</h3>
+        <input id="flashQ" type="text" placeholder="Question" />
+        <input id="flashA" type="text" placeholder="Answer" />
+        <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
+          <button id="addFlashcard" class="btn">Add</button>
+          <button id="clearFlashcards" class="muted-btn">Clear</button>
+        </div>
+        <small id="flashCount" style="display:block;margin-top:0.5rem;color:var(--muted)">0 flashcards</small>
+      </div>
+    </aside>
+
+    <!-- REVISION & FLASHCARD MODALS (fullwidth containers toggled) -->
+    <section id="revisionPane" class="card fullwidth" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Quick Revision</h2>
+        <button id="closeRevision" class="muted-btn">Close</button>
+      </div>
+      <div id="revisionList"></div>
+      <div id="printArea" style="margin-top:0.8rem"></div>
+    </section>
+
+    <section id="flashcardPane" class="card fullwidth" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Flashcards</h2>
+        <button id="closeFlashcards" class="muted-btn">Close</button>
+      </div>
+      <div id="flashViewer" style="margin-top:0.6rem">
+        <div id="flashcardBox" class="flashcard">No flashcards yet.</div>
+        <div class="flash-controls" style="margin-top:0.6rem">
+          <button id="prevFlash" class="muted-btn">Prev</button>
+          <button id="flipFlash" class="btn">Flip</button>
+          <button id="nextFlash" class="muted-btn">Next</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer style="text-align:center;padding:0.6rem;background:#072a49;color:#fff">© 2025 NotesWallah • Beta</footer>
+
+  <script>
+    /* -------------------- Utilities -------------------- */
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    const qs = s => document.querySelector(s);
+    const qsa = s => Array.from(document.querySelectorAll(s));
+
+    /* -------------------- Elements -------------------- */
+    const notesForm = qs('#notesForm');
+    const notesList = qs('#notesList');
+    const searchInput = qs('#searchInput');
+    const subjectFilter = qs('#subjectFilter');
+    const sortBy = qs('#sortBy');
+    const pdfUpload = qs('#pdfUpload');
+    const pdfPreview = qs('#pdfPreview');
+    const favoritesList = qs('#favoritesList');
+
+    /* Quick panes */
+    const revisionPane = qs('#revisionPane');
+    const revisionList = qs('#revisionList');
+    const openRevision = qs('#openRevision');
+    const closeRevision = qs('#closeRevision');
+
+    const flashcardPane = qs('#flashcardPane');
+    const openFlashcards = qs('#openFlashcards');
+    const closeFlashcards = qs('#closeFlashcards');
+    const flashQ = qs('#flashQ');
+    const flashA = qs('#flashA');
+    const addFlashcard = qs('#addFlashcard');
+    const flashCount = qs('#flashCount');
+
+    const themeToggleBtn = qs('#themeToggle');
+
+    /* -------------------- Storage helpers -------------------- */
+    function loadData() {
+      return JSON.parse(localStorage.getItem('notesWallah_v2') || '{"notes":[],"flashcards":[]}');
+    }
+    function saveData(data){ localStorage.setItem('notesWallah_v2', JSON.stringify(data)); }
+
+    /* -------------------- Theme -------------------- */
+    function setTheme(dark){
+      if(dark){document.body.classList.add('dark');themeToggleBtn.textContent='🌙'}
+      else{document.body.classList.remove('dark');themeToggleBtn.textContent='🌞'}
+      localStorage.setItem('darkMode',!!dark);
+    }
+    setTheme(localStorage.getItem('darkMode')==='true');
+    themeToggleBtn.addEventListener('click', ()=> setTheme(!document.body.classList.contains('dark')));
+
+    /* -------------------- PDF handling -------------------- */
+    pdfUpload.addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return pdfPreview.textContent='No PDF selected';
+      // show quick preview using object URL
+      const url = URL.createObjectURL(file);
+      pdfPreview.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="100%" />`;
+      // read as dataURL to store in localStorage (note: for demo only, large files bad in LS)
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        pdfPreview.dataset.dataurl = reader.result; // store temporary
+      };
+      reader.readAsDataURL(file);
+    });
+
+    /* -------------------- Notes CRUD -------------------- */
+    function createNote({subject,topic,content,pdfData}){
+      const data = loadData();
+      const item = {id:uid(),subject,topic,content,date:new Date().toISOString(),favorite:false,up:0,down:0,pdf:pdfData||null};
+      data.notes.unshift(item);
+      saveData(data);
+      renderNotes();
+    }
+
+    notesForm.addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const subject = qs('#subject').value.trim();
+      const topic = qs('#topic').value.trim();
+      const content = qs('#notesContent').value.trim();
+      const pdfData = pdfPreview.dataset.dataurl || null;
+      if(!subject||!topic||(content===''&&pdfData===null)){
+        alert('Please provide subject, topic and either paste notes or upload a PDF.');
+        return;
+      }
+      createNote({subject,topic,content,pdfData});
+      notesForm.reset();pdfPreview.innerHTML='No PDF selected';delete pdfPreview.dataset.dataurl;
+    });
+
+    function renderNotes(){
+      const data = loadData();
+      const q = searchInput.value.trim().toLowerCase();
+      const subject = subjectFilter.value;
+      let notes = data.notes.slice();
+      // filtering
+      notes = notes.filter(n => (subject===''||n.subject===subject) && (q===''|| n.topic.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)));
+      // sorting
+      const sort = sortBy.value;
+      if(sort==='newest') notes.sort((a,b)=> new Date(b.date)-new Date(a.date));
+      if(sort==='oldest') notes.sort((a,b)=> new Date(a.date)-new Date(b.date));
+      if(sort==='top') notes.sort((a,b)=> (b.up-b.down)-(a.up-a.down));
+      if(sort==='topic_az') notes.sort((a,b)=> a.topic.localeCompare(b.topic));
+
+      notesList.innerHTML = '';
+      if(notes.length===0) notesList.innerHTML='<div class="muted">No notes found.</div>';
+
+      notes.forEach(n=>{
+        const card = document.createElement('div');card.className='note-card';
+        const title = document.createElement('div'); title.innerHTML=`<strong>${escapeHTML(n.subject)} — ${escapeHTML(n.topic)}</strong>`;
+        const meta = document.createElement('div'); meta.className='note-meta';meta.textContent = `Submitted: ${new Date(n.date).toLocaleString()}`;
+        const content = document.createElement('pre'); content.style.whiteSpace='pre-wrap'; content.style.margin='0'; content.textContent = n.content||'';
+
+        // actions
+        const actions = document.createElement('div'); actions.className='note-actions';
+        const download = document.createElement('a'); download.className='download-btn btn'; download.textContent='Download';
+        if(n.pdf){ // if has pdf, allow download of PDF (data URL)
+          const blob = dataURLtoBlob(n.pdf);
+          download.href = URL.createObjectURL(blob);
+          download.download = `${n.subject}_${n.topic}.pdf`;
+        } else {
+          download.href = URL.createObjectURL(new Blob([n.content||''],{type:'text/plain'}));
+          download.download = `${n.subject}_${n.topic}.txt`;
+        }
+
+        const fav = document.createElement('button'); fav.className='icon-btn'; fav.textContent = n.favorite? '★ Favorited':'☆ Favorite';
+        fav.addEventListener('click',()=>{ toggleFavorite(n.id); });
+
+        const up = document.createElement('button'); up.className='icon-btn'; up.textContent = `👍 ${n.up}`;
+        up.addEventListener('click',()=>{ vote(n.id,1); });
+        const down = document.createElement('button'); down.className='icon-btn'; down.textContent = `👎 ${n.down}`;
+        down.addEventListener('click',()=>{ vote(n.id,-1); });
+
+        const del = document.createElement('button'); del.className='icon-btn'; del.textContent='Delete';
+        del.addEventListener('click',()=>{ if(confirm('Delete this note?')) { deleteNote(n.id); } });
+
+        const makeFlash = document.createElement('button'); makeFlash.className='muted-btn'; makeFlash.textContent='Create Flashcard';
+        makeFlash.addEventListener('click', ()=>{ qs('#flashQ').value = `Explain: ${n.topic}`; qs('#flashA').value = n.content.slice(0,300); openFlashcards.click(); });
+
+        actions.appendChild(download);
+        actions.appendChild(fav);
+        actions.appendChild(up);
+        actions.appendChild(down);
+        actions.appendChild(makeFlash);
+        actions.appendChild(del);
+
+        card.appendChild(title); card.appendChild(meta);
+        if(n.pdf){ const em = document.createElement('div'); em.innerHTML = `<small style="color:var(--muted)">Contains PDF — preview available</small>`; card.appendChild(em); }
+        card.appendChild(content);
+        card.appendChild(actions);
+        notesList.appendChild(card);
+      });
+
+      renderFavorites();
+    }
+
+    function vote(id,delta){
+      const data = loadData(); const note = data.notes.find(x=>x.id===id); if(!note) return;
+      if(delta>0) note.up++; else note.down++;
+      saveData(data); renderNotes();
+    }
+    function toggleFavorite(id){ const data=loadData(); const note=data.notes.find(x=>x.id===id); if(!note) return; note.favorite=!note.favorite; saveData(data); renderNotes(); }
+    function deleteNote(id){ const data=loadData(); data.notes = data.notes.filter(x=>x.id!==id); saveData(data); renderNotes(); }
+
+    function renderFavorites(){ const data=loadData(); const favs = data.notes.filter(n=>n.favorite); if(favs.length===0) favoritesList.textContent='No favorites yet.'; else{ favoritesList.innerHTML=''; favs.forEach(f=>{ const d=document.createElement('div'); d.textContent=`${f.subject} — ${f.topic}`; favoritesList.appendChild(d); }); } }
+
+    // helper to convert dataURL to Blob
+    function dataURLtoBlob(dataurl){ const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n); for(let i=0;i<n;i++) u8arr[i]=bstr.charCodeAt(i); return new Blob([u8arr],{type:mime}); }
+
+    function deleteAll(){ if(confirm('Delete ALL notes?')){ saveData({notes:[],flashcards:[]}); renderNotes(); renderFlashCount(); } }
+
+    /* -------------------- Search & controls -------------------- */
+    [searchInput,subjectFilter,sortBy].forEach(el=> el.addEventListener('input', renderNotes));
+
+    qs('#downloadAll').addEventListener('click', ()=>{
+      const data = loadData(); if(data.notes.length===0) return alert('No notes to download');
+      // create a combined TXT
+      let combined = '';
+      data.notes.forEach(n=>{ combined += `SUBJECT: ${n.subject}\nTOPIC: ${n.topic}\nDATE: ${new Date(n.date).toLocaleString()}\n\n${n.content}\n\n----\n\n`; });
+      const blob = new Blob([combined],{type:'text/plain'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'noteswallah_all_notes.txt'; a.click();
+    });
+
+    qs('#printNotes').addEventListener('click', ()=>{
+      // prepare print area as current filtered notes
+      const ps = qs('#printArea'); ps.innerHTML = '';
+      const data = loadData(); const q = searchInput.value.trim().toLowerCase(); const subject = subjectFilter.value;
+      let notes = data.notes.filter(n => (subject===''||n.subject===subject) && (q===''|| n.topic.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)));
+      notes.forEach(n=>{ const d = document.createElement('div'); d.style.marginBottom='0.6rem'; d.innerHTML = `<h3>${escapeHTML(n.subject)} — ${escapeHTML(n.topic)}</h3><small>${new Date(n.date).toLocaleString()}</small><pre style="white-space:pre-wrap">${escapeHTML(n.content)}</pre>`; ps.appendChild(d); });
+      window.print();
+    });
+
+    /* -------------------- Quick Revision -------------------- */
+    openRevision.addEventListener('click', ()=>{ revisionPane.style.display='block'; renderRevision(); window.scrollTo({top:0,behavior:'smooth'}); });
+    closeRevision.addEventListener('click', ()=>{ revisionPane.style.display='none'; });
+
+    function renderRevision(){ const data=loadData(); const q=searchInput.value.trim().toLowerCase(); const subject=subjectFilter.value; let notes=data.notes.filter(n=> (subject===''||n.subject===subject) && (q===''|| n.topic.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)) ); if(notes.length===0) revisionList.innerHTML='<div class="muted">No topics match.</div>';
+      else{ revisionList.innerHTML=''; notes.forEach(n=>{ const r=document.createElement('div'); r.className='rev-row'; r.innerHTML=`<div><strong>${escapeHTML(n.topic)}</strong><div style="color:var(--muted)">${escapeHTML(n.subject)}</div></div><div><button class="muted-btn">Expand</button></div>`; const btn=r.querySelector('button'); btn.addEventListener('click', ()=>{ showQuickModal(n); }); revisionList.appendChild(r); }); }
+    }
+
+    function showQuickModal(note){ // insert content into printArea area top
+      const pa = qs('#printArea'); pa.innerHTML = `<h3>${escapeHTML(note.subject)} — ${escapeHTML(note.topic)}</h3><small>${new Date(note.date).toLocaleString()}</small><pre style="white-space:pre-wrap">${escapeHTML(note.content)}</pre>`; window.scrollTo({top:0,behavior:'smooth'}); }
+
+    /* -------------------- Flashcards -------------------- */
+    addFlashcard.addEventListener('click', ()=>{ const q=flashQ.value.trim(), a=flashA.value.trim(); if(!q||!a){alert('Add both question and answer');return;} const data=loadData(); data.flashcards.push({id:uid(),q,a}); saveData(data); flashQ.value=''; flashA.value=''; renderFlashCount(); alert('Flashcard saved'); });
+    qs('#clearFlashcards').addEventListener('click', ()=>{ if(confirm('Clear all flashcards?')){ const data=loadData(); data.flashcards=[]; saveData(data); renderFlashCount(); renderFlashViewer(); } });
+
+    openFlashcards.addEventListener('click', ()=>{ flashcardPane.style.display='block'; renderFlashViewer(); window.scrollTo({top:0,behavior:'smooth'}); });
+    closeFlashcards.addEventListener('click', ()=>{ flashcardPane.style.display='none'; });
+
+    let flashIndex = 0, flipped=false;
+    function renderFlashCount(){ const data=loadData(); flashCount.textContent = `${data.flashcards.length} flashcards`; }
+    renderFlashCount();
+
+    function renderFlashViewer(){ const data=loadData(); const arr = data.flashcards; if(arr.length===0){ qs('#flashcardBox').textContent='No flashcards yet.'; return;} flashIndex = Math.max(0, Math.min(flashIndex, arr.length-1)); const current = arr[flashIndex]; qs('#flashcardBox').textContent = flipped? current.a : current.q; }
+
+    qs('#flipFlash').addEventListener('click', ()=>{ flipped = !flipped; renderFlashViewer(); });
+    qs('#prevFlash').addEventListener('click', ()=>{ const data=loadData(); if(data.flashcards.length===0) return; flashIndex = (flashIndex-1+data.flashcards.length)%data.flashcards.length; flipped=false; renderFlashViewer(); });
+    qs('#nextFlash').addEventListener('click', ()=>{ const data=loadData(); if(data.flashcards.length===0) return; flashIndex = (flashIndex+1)%data.flashcards.length; flipped=false; renderFlashViewer(); });
+
+    /* support quick: Save as flashcard from main form */
+    qs('#saveAsFlashcard').addEventListener('click', ()=>{ const q=`Explain: ${qs('#topic').value.trim()}`; const a=qs('#notesContent').value.trim(); if(!q||!a){ alert('Please fill topic and notes to create flashcard.'); return;} const data=loadData(); data.flashcards.push({id:uid(),q,a}); saveData(data); renderFlashCount(); alert('Saved as flashcard'); });
+
+    /* -------------------- Helpers -------------------- */
+    function escapeHTML(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // initial render
+    renderNotes();
+    renderFlashCount();
+
+    // small keyboard shortcut: / to focus search
+    window.addEventListener('keydown', (e)=>{ if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){ e.preventDefault(); searchInput.focus(); }});
+
+  </script>
 </body>
 </html>

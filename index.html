@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotesWallah - Student Notes Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --secondary: #10b981;
+            --dark: #1f2937;
+            --light: #f9fafb;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #ff0000 100%);
+        }
+        
+        .note-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .note-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .file-format-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* Star rating */
+        .star-rating {
+            display: inline-flex;
+            direction: rtl;
+        }
+        
+        .star-rating input {
+            display: none;
+        }
+        
+        .star-rating label {
+            cursor: pointer;
+            color: #ddd;
+            font-size: 1.2rem;
+            padding: 0 2px;
+        }
+        
+        .star-rating input:checked ~ label,
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: #ffc107;
+        }
+        
+        /* Modal animations */
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-animate {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        
+        /* Notification badge */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="text-xl font-bold text-gray-900">NotesWallah</span>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="#home" class="text-gray-900 hover:text-indigo-600 px-3 py-2 text-sm font-medium">Home</a>
+                        <a href="#browse" class="text-gray-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">Browse Notes</a>
+                        <a href="#upload" class="text-gray-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">Upload</a>
+                        <a href="#about" class="text-gray-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">About</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Search Icon -->
+                    <button id="search-toggle" class="p-2 text-gray-600 hover:text-indigo-600">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button id="notifications-toggle" class="p-2 text-gray-600 hover:text-indigo-600 relative">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">3</span>
+                        </button>
+                    </div>
+                    
+                    <!-- User Profile/Dropdown -->
+                    <div class="relative">
+                        <button id="user-menu-toggle" class="flex items-center text-sm rounded-full focus:outline-none">
+                            <img class="h-8 w-8 rounded-full" src="https://placehold.co/40x40/3b82f6/ffffff?text=U" alt="User profile picture" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Search Modal -->
+    <div id="search-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="absolute top-20 left-1/2 transform -translate-x-1/2 bg-white rounded-xl w-11/12 max-w-2xl modal-animate">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-search text-gray-400 mr-3"></i>
+                    <input type="text" placeholder="Search notes, subjects, users..." class="flex-1 border-0 focus:ring-0 text-lg" />
+                    <button onclick="closeSearch()" class="ml-4 text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">Popular Subjects</h4>
+                        <div class="space-y-1">
+                            <div class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">Calculus</div>
+                            <div class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">Organic Chemistry</div>
+                            <div class="text-sm text-blue-600 hover:text-blue-800 cursor-pointer">Computer Science</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">Recent Searches</h4>
+                        <div class="space-y-1">
+                            <div class="text-sm text-gray-600 hover:text-gray-800 cursor-pointer">Physics formulas</div>
+                            <div class="text-sm text-gray-600 hover:text-gray-800 cursor-pointer">History notes</div>
+                            <div class="text-sm text-gray-600 hover:text-gray-800 cursor-pointer">Biology lab</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notifications-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="absolute top-20 right-4 bg-white rounded-xl w-80 max-w-sm modal-animate">
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold">Notifications</h3>
+                    <button onclick="closeNotifications()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    <div class="p-3 bg-blue-50 rounded-lg">
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-download text-blue-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">Your note was downloaded</p>
+                                <p class="text-xs text-gray-600">Calculus I - Complete Guide • 2 min ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-green-50 rounded-lg">
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-star text-green-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">New rating received</p>
+                                <p class="text-xs text-gray-600">4.5 stars on Organic Chemistry Lab • 1 hour ago</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-purple-50 rounded-lg">
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-comment text-purple-600"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">New comment on your note</p>
+                                <p class="text-xs text-gray-600">World History Timeline • 3 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t">
+                    <button class="w-full text-center text-sm text-blue-600 hover:text-blue-800">
+                        View All Notifications
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Menu Modal -->
+    <div id="user-menu-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="absolute top-16 right-4 bg-white rounded-xl w-64 modal-animate">
+            <div class="p-4 border-b">
+                <div class="flex items-center">
+                    <img class="h-10 w-10 rounded-full mr-3" src="https://placehold.co/40x40/3b82f6/ffffff?text=U" alt="User profile" />
+                    <div>
+                        <p class="font-semibold">XYZ Student</p>
+                        <p class="text-sm text-gray-600">xyzstudent@gmail.com</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white rounded-xl shadow border space-y-2">
+                <a href="https://conflictdude18.github.io/NotesWallah/" class="block px-4 py-2 rounded hover:bg-gray-100 text-gray-800">My Profile</a>
+                 <a href="https://conflictdude18.github.io/NotesWallah/" class="block px-4 py-2 rounded hover:bg-gray-100 text-gray-800">My Notes</a>
+                 <a href="https://conflictdude18.github.io/NotesWallah/" class="block px-4 py-2 rounded hover:bg-gray-100 text-gray-800">Bookmarks</a>
+                <a href="https://conflictdude18.github.io/NotesWallah/" class="block px-4 py-2 rounded hover:bg-gray-100 text-gray-800">Settings</a>
+                <button onclick="signOut()" class="block w-full px-4 py-2 rounded bg-red-50 hover:bg-red-100 text-red-600 mt-2">Sign Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl w-11/12 max-w-md modal-animate">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Sign In</h2>
+                    <button onclick="closeLogin()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Enter your email" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input type="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Enter your password" />
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="rounded text-indigo-600" />
+                            <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                        </label>
+                        <a href="#forgot" class="text-sm text-indigo-600 hover:text-indigo-800">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">
+                        Sign In
+                    </button>
+                </form>
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-gray-600">Don't have an account? <a href="#signup" class="text-indigo-600 hover:text-indigo-800">Sign up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section id="home" class="gradient-bg text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div class="text-center">
+                <h1 class="text-4xl md:text-6xl font-bold mb-6">Share Knowledge, Empower Education</h1>
+                <p class="text-xl md:text-2xl mb-8 opacity-90">The ultimate platform for students to share, discover, and collaborate on academic notes</p>
+                <div class="flex justify-center space-x-4">
+                    <button onclick="openSearch()" class="bg-white text-indigo-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition duration-300">
+                        <i class="fas fa-search mr-2"></i>Browse Notes
+                    </button>
+                    <button onclick="openLogin()" class="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-indigo-600 transition duration-300">
+                        <i class="fas fa-user-plus mr-2"></i>Join Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Profile Section -->
+    <section id="profile" class="bg-white py-12 hidden">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-xl shadow-lg">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 h-32 rounded-t-xl"></div>
+                <div class="px-6 pb-6">
+                    <div class="flex items-end -mt-16">
+                        <img class="h-24 w-24 rounded-full border-4 border-white" src="https://placehold.co/96x96/3b82f6/ffffff?text=JS" alt="John Student profile" />
+                        <div class="ml-6 mb-4">
+                            <h2 class="text-2xl font-bold">John Student</h2>
+                            <p class="text-gray-600">Computer Science Major</p>
+                            <div class="flex items-center mt-2">
+                                <div class="flex items-center text-yellow-400">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <span class="ml-2 text-sm text-gray-600">4.5/5.0 (128 reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-6 mt-6">
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-indigo-600">24</div>
+                            <div class="text-sm text-gray-600">Notes Uploaded</div>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-green-600">1.2K</div>
+                            <div class="text-sm text-gray-600">Total Downloads</div>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <div class="text-2xl font-bold text-blue-600">89</div>
+                            <div class="text-sm text-gray-600">Followers</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="bg-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Why Choose NotesWallah?</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-file-alt text-indigo-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Multiple Formats</h3>
+                    <p class="text-gray-600">Upload and download notes in PDF, DOCX, PPTX, XLSX, and image formats with full formatting preserved.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-comments text-green-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Interactive Comments</h3>
+                    <p class="text-gray-600">Discuss, clarify, and collaborate with other students through our interactive comment system.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-search text-blue-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Smart Search</h3>
+                    <p class="text-gray-600">Find exactly what you need with our advanced search and filtering system by subject, course, and keywords.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Browse Notes Section -->
+    <section id="browse" class="bg-gray-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-8">Browse Featured Notes</h2>
+            
+            <!-- Enhanced Search and Filters -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1 relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" placeholder="Search notes, subjects, keywords..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                    </div>
+                    <select class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option>All Subjects</option>
+                        <option>Mathematics</option>
+                        <option>Science</option>
+                        <option>History</option>
+                        <option>Computer Science</option>
+                    </select>
+                    <select class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option>All Formats</option>
+                        <option>PDF</option>
+                        <option>DOCX</option>
+                        <option>PPTX</option>
+                        <option>XLSX</option>
+                        <option>Images</option>
+                    </select>
+                    <select class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option>Sort by: Popular</option>
+                        <option>Sort by: Rating</option>
+                        <option>Sort by: Newest</option>
+                        <option>Sort by: Downloads</option>
+                    </select>
+                    <button class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notes Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Note Card 1 -->
+                <div class="note-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="relative">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/59804795-b38e-4707-a526-495025cb4cf7.png" alt="Clean mathematical notes with calculus formulas, graphs, and step-by-step problem solutions in PDF format" class="w-full h-48 object-cover">
+                        <span class="absolute top-4 right-4 bg-blue-500 text-white file-format-badge">PDF</span>
+                        <button class="absolute top-4 left-4 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 bookmark-btn" data-note-id="1">
+                            <i class="fas fa-bookmark text-gray-400"></i>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2">Calculus I - Complete Guide</h3>
+                        <p class="text-gray-600 mb-4">Comprehensive notes covering limits, derivatives, and integrals with practice problems.</p>
+                        
+                        <div class="flex items-center mb-3">
+                            <div class="flex items-center text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="text-sm text-gray-600">4.5 (24 reviews)</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm text-gray-500">Mathematics</span>
+                            <span class="text-sm text-gray-500">25 downloads</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700">
+                                <i class="fas fa-download mr-2"></i>Download
+                            </button>
+                            <button class="bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300" onclick="openComments()">
+                                <i class="fas fa-comment"></i>
+                            </button>
+                            <button class="bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300 rate-btn" data-note-id="1">
+                                <i class="fas fa-star"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note Card 2 -->
+                <div class="note-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="relative">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/28c7d863-0bbd-4b5f-9eb0-5514e6c35669.png" alt="Detailed chemistry laboratory notes with experiment procedures, chemical equations, and safety protocols in DOCX format" class="w-full h-48 object-cover">
+                        <span class="absolute top-4 right-4 bg-green-500 text-white file-format-badge">DOCX</span>
+                        <button class="absolute top-4 left-4 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 bookmark-btn" data-note-id="2">
+                            <i class="fas fa-bookmark text-gray-400"></i>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2">Organic Chemistry Lab</h3>
+                        <p class="text-gray-600 mb-4">Detailed lab procedures and observations from organic chemistry experiments.</p>
+                        
+                        <div class="flex items-center mb-3">
+                            <div class="flex items-center text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-sm text-gray-600">5.0 (18 reviews)</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm text-gray-500">Chemistry</span>
+                            <span class="text-sm text-gray-500">18 downloads</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700">
+                                <i class="fas fa-download mr-2"></i>Download
+                            </button>
+                            <button class="bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300" onclick="openComments()">
+                                <i class="fas fa-comment"></i>
+                            </button>
+                            <button class="bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300 rate-btn" data-note-id="2">
+                                <i class="fas fa-star"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note Card 3 -->
+                <div class="note-card bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="relative">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/97e202f9-93e4-454c-b973-52fde549cff1.png" alt="Visual history timeline presentation with important events, dates, and historical figures in PPTX format" class="w-full h-48 object-cover">
+                        <span class="absolute top-4 right-4 bg-orange-500 text-white file-format-badge">PPTX</span>
+                        <button class="absolute top-4 left-4 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 bookmark-btn" data-note-id="3">
+                            <i class="fas fa-bookmark text-gray-400"></i>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2">World History Timeline</h3>
+                        <p class="text-gray-600 mb-4">Interactive timeline presentation covering major world events from ancient to modern times.</p>
+                        
+                        <div class="flex items-center mb-3">
+                            <div class="flex items-center text-yellow-400 mr-2">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                            </div>
+                            <span class="text-sm text-gray-600">4.0 (32 reviews)</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-sm text-gray-500">History</span>
+                            <span class="text-sm text-gray-500">32 downloads</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700">
+                                <i class="fas fa-download mr-2"></i>Download
+                            </button>
+                            <button class="bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300" onclick="openComments()">
+                                <i class="fas fa-comment"></i>
+                            </button>
+                            <button class="bg-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-300 rate-btn" data-note-id="3">
+                                <i class="fas fa-star"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-8">
+                <button class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700">
+                    Load More Notes
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rating Modal -->
+    <div id="rating-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl w-11/12 max-w-md modal-animate">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Rate This Note</h2>
+                    <button onclick="closeRating()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-semibold mb-2" id="rating-note-title">Calculus I - Complete Guide</h3>
+                    <div class="star-rating mb-4">
+                        <input type="radio" id="star5" name="rating" value="5" />
+                        <label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star4" name="rating" value="4" />
+                        <label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star3" name="rating" value="3" />
+                        <label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star2" name="rating" value="2" />
+                        <label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                        <input type="radio" id="star1" name="rating" value="1" />
+                        <label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Your Review</label>
+                    <textarea placeholder="Share your experience with this note..." rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+                <button class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">
+                    Submit Review
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Section -->
+    <section id="upload" class="bg-white py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-gray-900 mb-8">Share Your Knowledge</h2>
+            
+            <div class="bg-gray-50 rounded-xl p-8">
+                <div id="upload-area" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-400 transition-colors">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-lg text-gray-600 mb-2">Drag & drop your notes here</p>
+                    <p class="text-sm text-gray-500 mb-4">or</p>
+                    <input type="file" id="file-input" class="hidden" multiple accept=".pdf,.docx,.pptx,.xlsx,.jpg,.jpeg,.png">
+                    <button onclick="document.getElementById('file-input').click()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700">
+                        Browse Files
+                    </button>
+                    <p class="text-xs text-gray-500 mt-4">Supports PDF, DOCX, PPTX, XLSX, JPG, PNG (Max 50MB)</p>
+                </div>
+
+                <!-- Upload Progress -->
+                <div id="upload-progress" class="mt-6 hidden">
+                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>Calculus_Notes.pdf</span>
+                        <span>75%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full progress-bar" style="width: 75%"></div>
+                    </div>
+                </div>
+
+                <!-- Note Details Form -->
+                <div class="mt-8 space-y-4">
+                    <input type="text" placeholder="Note Title" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    <textarea placeholder="Description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                    <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option>Select Subject</option>
+                        <option>Mathematics</option>
+                        <option>Science</option>
+                        <option>History</option>
+                        <option>Computer Science</option>
+                        <option>Literature</option>
+                    </select>
+                    <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <option>Course Level</option>
+                        <option>High School</option>
+                        <option>Undergraduate</option>
+                        <option>Graduate</option>
+                    </select>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="rounded text-indigo-600">
+                            <span class="ml-2 text-sm text-gray-600">I confirm this is my original work</span>
+                        </label>
+                    </div>
+                    <button class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">
+                        <i class="fas fa-upload mr-2"></i>Upload Notes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comments Modal -->
+    <div id="comments-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl w-11/12 max-w-2xl max-h-96 overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Comments</h3>
+                    <button onclick="closeComments()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-4 mb-4">
+                    <!-- Comment 1 -->
+                    <div class="border-l-4 border-indigo-500 pl-4">
+                        <div class="flex items-center mb-2">
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/088687d5-7bda-4833-a9bf-cf2df75cc9c0.png" alt="User profile picture of John Smith with blue background" class="w-8 h-8 rounded-full mr-3">
+                            <div>
+                                <p class="font-semibold">John Smith</p>
+                                <p class="text-sm text-gray-500">2 hours ago</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-700">This was extremely helpful for my calculus exam! The derivative section especially cleared up my confusion.</p>
+                    </div>
+                    <!-- Comment 2 -->
+                    <div class="border-l-4 border-green-500 pl-4">
+                        <div class="flex items-center mb-2">
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/4a045811-2f3b-47b6-9d3d-f4f4c46ea8f4.png" alt="User profile picture of Emily Stone with green background" class="w-8 h-8 rounded-full mr-3">
+                            <div>
+                                <p class="font-semibold">Emily Stone</p>
+                                <p class="text-sm text-gray-500">5 hours ago</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-700">Could you clarify the integration by parts example on page 3? I'm having trouble following the steps.</p>
+                    </div>
+                </div>
+                <div class="border-t pt-4">
+                    <textarea placeholder="Add a comment..." rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-2"></textarea>
+                    <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 float-right">
+                        Post Comment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">NotesWallah</h3>
+                    <p class="text-gray-400">Empowering students through collaborative learning and knowledge sharing.</p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4 uppercase tracking-wider">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Browse Notes</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Upload Guidelines</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4 uppercase tracking-wider">Legal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Copyright</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4 uppercase tracking-wider">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white" aria-label="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="https://snapchat.com/add/anshul.v0id" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white" aria-label="Snapchat">
+                            <i class="fab fa-snapchat"></i>
+                        </a>
+                        <a href="https://instagram.com/anshul.v0id" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white" aria-label="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white" aria-label="LinkedIn">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 NotesWallah. All rights reserved.</p>
+                <p> Currently in Beta Testing.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Core Platform Enhancements JavaScript
+        
+        // Modal Management
+        function openSearch() {
+            document.getElementById('search-modal').classList.remove('hidden');
+        }
+        
+        function closeSearch() {
+            document.getElementById('search-modal').classList.add('hidden');
+        }
+        
+        function openNotifications() {
+            document.getElementById('notifications-modal').classList.remove('hidden');
+        }
+        
+        function closeNotifications() {
+            document.getElementById('notifications-modal').classList.add('hidden');
+        }
+        
+        function openUserMenu() {
+            document.getElementById('user-menu-modal').classList.remove('hidden');
+        }
+        
+        function closeUserMenu() {
+            document.getElementById('user-menu-modal').classList.add('hidden');
+        }
+        
+        function openLogin() {
+            document.getElementById('login-modal').classList.remove('hidden');
+        }
+        
+        function closeLogin() {
+            document.getElementById('login-modal').classList.add('hidden');
+        }
+        
+        function openComments() {
+            document.getElementById('comments-modal').classList.remove('hidden');
+        }
+        
+        function closeComments() {
+            document.getElementById('comments-modal').classList.add('hidden');
+        }
+        
+        function openRating() {
+            document.getElementById('rating-modal').classList.remove('hidden');
+        }
+        
+        function closeRating() {
+            document.getElementById('rating-modal').classList.add('hidden');
+        }
+        
+        function signOut() {
+            window.location.href = 'https://conflictdude18.github.io/NotesWallah/';
+        }
+
+        // Event Listeners for Modal Toggles
+        document.getElementById('search-toggle').addEventListener('click', openSearch);
+        document.getElementById('notifications-toggle').addEventListener('click', openNotifications);
+        document.getElementById('user-menu-toggle').addEventListener('click', openUserMenu);
+        
+
+        // Bookmark functionality
+        document.querySelectorAll('.bookmark-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                if (icon.classList.contains('fas')) {
+                    icon.classList.replace('fas', 'far');
+                    icon.classList.replace('text-yellow-400', 'text-gray-400');
+                    showNotification('Note removed from bookmarks', 'success');
+                } else {
+                    icon.classList.replace('far', 'fas');
+                    icon.classList.replace('text-gray-400', 'text-yellow-400');
+                    showNotification('Note added to bookmarks', 'success');
+                }
+            });
+        });
+        
+        // Rating functionality
+        document.querySelectorAll('.rate-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const noteId = this.getAttribute('data-note-id');
+                const noteTitle = this.closest('.note-card').querySelector('h3').textContent;
+                document.getElementById('rating-note-title').textContent = noteTitle;
+                openRating();
+            });
+        });
+        
+        // Star rating interaction
+        document.querySelectorAll('.star-rating input').forEach(input => {
+            input.addEventListener('change', function() {
+                // Handle rating submission
+                setTimeout(() => {
+                    closeRating();
+                    showNotification('Rating submitted successfully!', 'success');
+                }, 1000);
+            });
+        });
+        
+        // Notification system
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ${
+                type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
+                type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
+                'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+        
+        // Enhanced search functionality
+        const searchInput = document.querySelector('#search-modal input');
+        searchInput.addEventListener('input', function() {
+            // Real-time search suggestions would go here
+            console.log('Search query:', this.value);
+        });
+        
+        // User authentication state management
+        let isLoggedIn = false;
+        
+        function toggleAuthState() {
+            isLoggedIn = !isLoggedIn;
+            updateUIForAuthState();
+        }
+        
+        function updateUIForAuthState() {
+            const authButton = document.querySelector('nav button:first-child');
+            if (isLoggedIn) {
+                authButton.innerHTML = '<i class="fas fa-user mr-2"></i>Profile';
+                authButton.onclick = openUserMenu;
+            } else {
+                authButton.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Sign Up';
+                authButton.onclick = openLogin;
+            }
+        }
+        
+        // Dark mode functionality
+        const toggleBtn = document.getElementById('dark-mode-toggle');
+        const darkIcon = document.getElementById('dark-mode-icon');
+        const htmlElement = document.documentElement;
+        
+        // Load saved theme from localStorage
+        if (localStorage.getItem('theme') === 'dark' || 
+            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            htmlElement.classList.add('dark');
+            darkIcon.classList.replace('fa-moon', 'fa-sun');
+        } else {
+            htmlElement.classList.remove('dark');
+            darkIcon.classList.replace('fa-sun', 'fa-moon');
+        }
+        
+        toggleBtn.addEventListener('click', () => {
+            if (htmlElement.classList.contains('dark')) {
+                htmlElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                darkIcon.classList.replace('fa-sun', 'fa-moon');
+            } else {
+                htmlElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                darkIcon.classList.replace('fa-moon', 'fa-sun');
+            }
+        });
+        
+        // File upload functionality
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadProgress = document.getElementById('upload-progress');
+        
+        // Handle file selection
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop handling
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            uploadArea.classList.add('border-indigo-500');
+            uploadArea.classList.remove('border-gray-300');
+        }
+        
+        function unhighlight() {
+            uploadArea.classList.remove('border-indigo-500');
+            uploadArea.classList.add('border-gray-300');
+        }
+        
+        uploadArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+        
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+        }
+        
+        function handleFiles(files) {
+            if (files.length > 0) {
+                // Show upload progress
+                uploadProgress.classList.remove('hidden');
+                
+                // Simulate upload progress
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 5;
+                    document.querySelector('.progress-bar').style.width = progress + '%';
+                    document.querySelector('#upload-progress span:last-child').textContent = progress + '%';
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            uploadProgress.classList.add('hidden');
+                            showNotification('File uploaded successfully!', 'success');
+                        }, 500);
+                    }
+                }, 100);
+            }
+        }
+        
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Initialize the application
+        updateUIForAuthState();
+        showNotification('Welcome to NotesWallah! Explore thousands of student notes.', 'info');
+    </script>
+</body>
+</html>
